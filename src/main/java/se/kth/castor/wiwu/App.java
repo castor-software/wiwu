@@ -1,4 +1,4 @@
-package se.kth.castor;
+package se.kth.castor.wiwu;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
@@ -8,9 +8,9 @@ import java.io.File;
 import java.io.IOException;
 
 public class App {
-    private static final String repositoryName = "jcabi/jcabi-github";
+    private static final String repositoryName = "INRIA/spoon";
     private static final File clonedRepositoryDir = new File(
-            "/src/main/resources/cloned-repository" + "/" + repositoryName.split("/")[1]
+            "src/main/resources/cloned-repository" + "/" + repositoryName.split("/")[1]
     );
 
     public static void main(String[] args) throws IOException, GitAPIException {
@@ -18,7 +18,7 @@ public class App {
         RemoteRepository remoteRepository;
 
         if (!clonedRepositoryDir.exists()) {
-            remoteRepository = remoteRepository(repositoryName, gitHubStats);
+            remoteRepository = remoteRepository(gitHubStats);
         }
 
         Git git = Git.open(clonedRepositoryDir);
@@ -27,24 +27,25 @@ public class App {
                 .call()
                 .forEach(a -> System.out.println(a.getName()));
 
-        git.tagList()
-                .call()
-                .forEach(a -> System.out.println(a.getObjectId()));
-
-        // TODO checkout tag on the tag and apply DepClean there
+        // TODO checkout the tag and apply DepClean there
         git.checkout()
-                .setName("0.11.1")
+                .setName("spoon-core-8.1.0")
                 .call();
+
+        Cmd cmd = new Cmd(clonedRepositoryDir);
+
     }
 
-    private static RemoteRepository remoteRepository(String repositoryName, GitHubStats gitHubStats)
-            throws IOException {
+    /**
+     * Clones a repository
+     * @param gitHubStats
+     * @return
+     * @throws IOException
+     */
+    private static RemoteRepository remoteRepository(GitHubStats gitHubStats) throws IOException {
         // clone the repository
         var remoteRepository = new RemoteRepository(gitHubStats.url());
         try {
-            File clonedRepositoryDir = new File(
-                    "cloned-repository" + "/" + repositoryName.split("/")[1]
-            );
             FileUtils.forceMkdir(clonedRepositoryDir);
             remoteRepository.cloneRepository(clonedRepositoryDir.getAbsolutePath());
         } catch (GitAPIException e) {

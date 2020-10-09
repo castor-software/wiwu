@@ -1,4 +1,4 @@
-package se.kth.castor;
+package se.kth.castor.wiwu;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;

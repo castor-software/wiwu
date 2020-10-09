@@ -1,4 +1,4 @@
-package se.kth.castor;
+package se.kth.castor.wiwu;
 
 import org.eclipse.jgit.lib.ProgressMonitor;
 
