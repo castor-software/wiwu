@@ -10,7 +10,8 @@ import java.io.IOException;
 public class App {
     private static final String repositoryName = "INRIA/spoon";
     private static final File clonedRepositoryDir = new File(
-            "src/main/resources/cloned-repository" + "/" + repositoryName.split("/")[1]
+            // "src/main/resources/cloned-repository" + "/" + repositoryName.split("/")[1]
+            "cloned-repository" + "/" + repositoryName.split("/")[1]
     );
 
     public static void main(String[] args) throws IOException, GitAPIException {

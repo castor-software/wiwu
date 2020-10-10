@@ -2,19 +2,17 @@ package se.kth.castor.wiwu;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-
 class CmdTest {
 
     @Test
     void name() {
-        Cmd cmd = new Cmd(new File("tmp"));
-        String[] str = new String[]{
-                "cd",
-                "/Users/cesarsv/IdeaProjects/wiwu/src/main/resources/cloned-repository/spoon",
-                "mvn",
-                "se.kth.castor:depclean-maven-plugin:1.1.0:depclean"
-        };
-        cmd.execProcess(str);
+        //     Cmd cmd = new Cmd(new File("/Users/cesarsv/IdeaProjects/wiwu/src/main/resources/cloned-repository/spoon"));
+        //     String[] str = new String[]{
+        //             "mvn",
+        //             "se.kth.castor:depclean-maven-plugin:1.1.0:depclean"
+        //     };
+        //     Map<String, Set<String>> result = cmd.execProcess(str);
+        //
+        //     System.out.println(result);
     }
 }

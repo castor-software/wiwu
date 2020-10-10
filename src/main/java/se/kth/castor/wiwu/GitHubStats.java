@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.List;
 
 public class GitHubStats {
+
     private String repositoryName;
     private GHRepository ghRepository;
 

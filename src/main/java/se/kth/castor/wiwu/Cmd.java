@@ -8,6 +8,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * This class represents a command executed in the terminal.
+ */
 public class Cmd {
 
     private File path;
@@ -18,22 +21,16 @@ public class Cmd {
 
     public Map<String, Set<String>> execProcess(String[] cmd) {
         Map<String, Set<String>> result = new HashMap<>();
+        result.put("UsedDirect", new HashSet<>());
+        result.put("UsedTransitive", new HashSet<>());
+        result.put("BloatedDirect", new HashSet<>());
+        result.put("BloatedTransitive", new HashSet<>());
         try {
             String line;
-            for (String s : cmd) {
-                System.out.print(s + " ");
-            }
-            Process p = Runtime.getRuntime().exec(cmd);
+            Process p = Runtime.getRuntime().exec(cmd, null, path);
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-            boolean dependencyUsageType[] = new boolean[]{false, false, false, false};
+            boolean[] dependencyUsageType = new boolean[]{false, false, false, false};
             while ((line = input.readLine()) != null) {
-                System.out.println(line);
-                result.put("UsedDirect", new HashSet<>());
-                result.put("UsedTransitive", new HashSet<>());
-                result.put("BloatedDirect", new HashSet<>());
-                result.put("BloatedTransitive", new HashSet<>());
-
                 if (line.startsWith("Used direct dependencies")) {
                     dependencyUsageType[0] = true;
                     dependencyUsageType[1] = false;
@@ -56,16 +53,15 @@ public class Cmd {
                     dependencyUsageType[2] = false;
                     dependencyUsageType[3] = true;
                 }
-
-                if (line.startsWith("        ")) {
+                if (line.startsWith("\t")) {
                     if (dependencyUsageType[0]) {
-                        result.get("UsedDirect").add(line);
+                        result.get("UsedDirect").add(line.split("\t")[1]);
                     } else if (dependencyUsageType[1]) {
-                        result.get("UsedTransitive").add(line);
+                        result.get("UsedTransitive").add(line.split("\t")[1]);
                     } else if (dependencyUsageType[2]) {
-                        result.get("BloatedDirect").add(line);
+                        result.get("BloatedDirect").add(line.split("\t")[1]);
                     } else if (dependencyUsageType[3]) {
-                        result.get("BloatedTransitive").add(line);
+                        result.get("BloatedTransitive").add(line.split("\t")[1]);
                     }
                 }
             }
