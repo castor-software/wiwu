@@ -19,15 +19,24 @@ public class Cmd {
         this.path = path;
     }
 
-    public Map<String, Set<String>> execProcess(String[] cmd) {
+    /**
+     * Executes DepClean and return a hash map with the results of the analysis.
+     *
+     * @return A map of [dependency-status] -> [dependencies]
+     */
+    public Map<String, Set<String>> depCleanResult() {
         Map<String, Set<String>> result = new HashMap<>();
+        String[] str = new String[]{
+                "mvn",
+                "se.kth.castor:depclean-maven-plugin:1.1.0:depclean"
+        };
         result.put("UsedDirect", new HashSet<>());
         result.put("UsedTransitive", new HashSet<>());
         result.put("BloatedDirect", new HashSet<>());
         result.put("BloatedTransitive", new HashSet<>());
         try {
             String line;
-            Process p = Runtime.getRuntime().exec(cmd, null, path);
+            Process p = Runtime.getRuntime().exec(str, null, path);
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
             boolean[] dependencyUsageType = new boolean[]{false, false, false, false};
             while ((line = input.readLine()) != null) {
@@ -70,5 +79,33 @@ public class Cmd {
             System.out.println("Failed to run: " + e);
         }
         return result;
+    }
+
+    /**
+     * Writes the dependency tree of a Maven project to a file.
+     *
+     * @param outputFile A file with the dependency tree.
+     * @return True if the dependency tree was obtained, false otherwise.
+     */
+    public boolean dependencyTree(File outputFile) {
+        String[] str = new String[]{
+                "mvn",
+                "dependency:tree",
+                "-DoutputFile=" + outputFile.getAbsolutePath(),
+                "-Dverbose=true"
+        };
+        try {
+            String line;
+            Process p = Runtime.getRuntime().exec(str, null, path);
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            while ((line = input.readLine()) != null) {
+                System.out.println(line);
+            }
+            input.close();
+        } catch (Exception e) {
+            System.out.println("Failed to run: " + e);
+            return false;
+        }
+        return true;
     }
 }

@@ -3,6 +3,7 @@ package se.kth.castor.wiwu;
 import org.eclipse.jgit.lib.ProgressMonitor;
 
 class CloneProgressMonitor implements ProgressMonitor {
+
     @Override
     public void start(int totalTasks) {
         System.out.println("Starting work on " + totalTasks + " tasks");

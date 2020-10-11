@@ -10,18 +10,18 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RemoteRepository {
+public class GitRepo {
 
-    private String remoteURL;
+    private final String remoteURL;
     private Git git;
 
-    public RemoteRepository(String remoteURL) {
+    public GitRepo(String remoteURL) {
         this.remoteURL = remoteURL;
     }
 
-    public void cloneRepository(String destinationDir) throws IOException, GitAPIException {
+    public void cloneRepository(File destinationDir) throws IOException, GitAPIException {
         // prepare a new folder for the cloned repository
-        URL fileUrl = new URL("file://" + destinationDir);
+        URL fileUrl = new URL("file://" + destinationDir.getAbsolutePath());
         File destinationFile = FileUtils.toFile(fileUrl);
         // then clone
         System.out.println("Cloning from " + remoteURL + " to " + fileUrl);

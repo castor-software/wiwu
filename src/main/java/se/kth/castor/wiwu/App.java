@@ -1,6 +1,5 @@
 package se.kth.castor.wiwu;
 
-import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
@@ -8,18 +7,18 @@ import java.io.File;
 import java.io.IOException;
 
 public class App {
-    private static final String repositoryName = "INRIA/spoon";
+
+    private static final String repositoryName = "giltene/jHiccup";
     private static final File clonedRepositoryDir = new File(
-            // "src/main/resources/cloned-repository" + "/" + repositoryName.split("/")[1]
             "cloned-repository" + "/" + repositoryName.split("/")[1]
     );
 
     public static void main(String[] args) throws IOException, GitAPIException {
-        GitHubStats gitHubStats = new GitHubStats(repositoryName);
-        RemoteRepository remoteRepository;
+        GitHubRepo gitHubRepo = new GitHubRepo(repositoryName);
+        GitRepo gitRepo;
 
         if (!clonedRepositoryDir.exists()) {
-            remoteRepository = remoteRepository(gitHubStats);
+            gitRepo = gitHubRepo.remoteRepository(clonedRepositoryDir);
         }
 
         Git git = Git.open(clonedRepositoryDir);
@@ -35,23 +34,5 @@ public class App {
 
         Cmd cmd = new Cmd(clonedRepositoryDir);
 
-    }
-
-    /**
-     * Clones a repository
-     * @param gitHubStats
-     * @return
-     * @throws IOException
-     */
-    private static RemoteRepository remoteRepository(GitHubStats gitHubStats) throws IOException {
-        // clone the repository
-        var remoteRepository = new RemoteRepository(gitHubStats.url());
-        try {
-            FileUtils.forceMkdir(clonedRepositoryDir);
-            remoteRepository.cloneRepository(clonedRepositoryDir.getAbsolutePath());
-        } catch (GitAPIException e) {
-            System.out.println("Unable to clone the repository");
-        }
-        return remoteRepository;
     }
 }
