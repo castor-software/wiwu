@@ -1,6 +1,5 @@
 package se.kth.castor.wiwu;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +41,6 @@ class GitRepoTest {
 
     @AfterEach
     void tearDown() throws URISyntaxException, IOException {
-        FileUtils.deleteDirectory(clonedRepoDir);
+        // FileUtils.deleteDirectory(clonedRepoDir);
     }
 }

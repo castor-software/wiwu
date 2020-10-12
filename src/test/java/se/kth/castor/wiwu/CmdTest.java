@@ -11,13 +11,15 @@ import java.util.Set;
 class CmdTest {
 
     Cmd cmd;
+    File clonedRepoDir;
 
     @BeforeEach
     void setUp() {
         String repoName = "giltene/jHiccup";
-        cmd = new Cmd(new File(
+        clonedRepoDir = new File(
                 "src/test/resources/cloned" + "/" + repoName.split("/")[1]
-        ));
+        );
+        cmd = new Cmd(clonedRepoDir);
     }
 
     @Test
@@ -28,7 +30,7 @@ class CmdTest {
 
     @Test
     void obtainDependencyTree() {
-        File file = new File("./target/dependency-tree.txt");
+        File file = new File(clonedRepoDir.getAbsolutePath() + "/" + "dependency-tree.txt");
         cmd.dependencyTree(file);
         Assertions.assertTrue(file.exists());
     }
