@@ -1,9 +1,11 @@
 package se.kth.castor.wiwu;
 
 import fr.dutra.tools.maven.deptree.core.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 
+@Slf4j
 public class DepTree {
 
     public static void main(String[] args) throws ParseException, IOException, VisitException {
