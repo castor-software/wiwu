@@ -1,5 +1,6 @@
 package se.kth.castor.wiwu;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.kohsuke.github.GHRepository;
@@ -13,6 +14,7 @@ import java.util.List;
 /**
  * This class allows to access the metadata of a repository in GitHub.
  */
+@Slf4j
 public class GitHubRepo {
 
     /**
@@ -61,7 +63,7 @@ public class GitHubRepo {
             FileUtils.forceMkdir(clonedRepositoryDir);
             remoteRepository.cloneRepository(clonedRepositoryDir);
         } catch (GitAPIException e) {
-            System.out.println("Unable to clone the repository from GitHub.");
+            log.error("Unable to clone the repository from GitHub.");
         }
         return remoteRepository;
     }

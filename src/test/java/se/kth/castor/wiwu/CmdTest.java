@@ -1,5 +1,6 @@
 package se.kth.castor.wiwu;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,11 +23,13 @@ class CmdTest {
     @Test
     void obtainDepCleanResult() {
         Map<String, Set<String>> result = cmd.depCleanResult();
-        System.out.println(result);
+        Assertions.assertFalse(result.isEmpty());
     }
 
     @Test
     void obtainDependencyTree() {
-        cmd.dependencyTree(new File("./target/dependency-tree.txt"));
+        File file = new File("./target/dependency-tree.txt");
+        cmd.dependencyTree(file);
+        Assertions.assertTrue(file.exists());
     }
 }

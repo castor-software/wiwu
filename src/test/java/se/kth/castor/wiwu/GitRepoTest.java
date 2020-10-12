@@ -1,14 +1,13 @@
 package se.kth.castor.wiwu;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GitRepoTest {
 
@@ -28,7 +27,7 @@ class GitRepoTest {
         );
         GitHubRepo gitHubRepo = new GitHubRepo(repoName);
         gitHubRepo.remoteRepository(clonedRepoDir);
-        assertTrue(clonedRepoDir.exists());
+        Assertions.assertTrue(clonedRepoDir.exists());
     }
 
     @Test

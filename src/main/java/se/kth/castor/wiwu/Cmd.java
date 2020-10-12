@@ -1,5 +1,7 @@
 package se.kth.castor.wiwu;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -11,9 +13,10 @@ import java.util.Set;
 /**
  * This class represents a command executed in the terminal.
  */
+@Slf4j
 public class Cmd {
 
-    private File path;
+    private final File path;
 
     public Cmd(File path) {
         this.path = path;
@@ -76,7 +79,7 @@ public class Cmd {
             }
             input.close();
         } catch (Exception e) {
-            System.out.println("Failed to run: " + e);
+            log.error("Failed to run: " + e);
         }
         return result;
     }
@@ -99,11 +102,11 @@ public class Cmd {
             Process p = Runtime.getRuntime().exec(str, null, path);
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
             while ((line = input.readLine()) != null) {
-                System.out.println(line);
+                log.info(line);
             }
             input.close();
         } catch (Exception e) {
-            System.out.println("Failed to run: " + e);
+            log.error("Failed to run: " + e);
             return false;
         }
         return true;

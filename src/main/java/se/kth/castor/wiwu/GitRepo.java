@@ -1,5 +1,6 @@
 package se.kth.castor.wiwu;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -10,6 +11,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class GitRepo {
 
     private final String remoteURL;
@@ -24,7 +26,7 @@ public class GitRepo {
         URL fileUrl = new URL("file://" + destinationDir.getAbsolutePath());
         File destinationFile = FileUtils.toFile(fileUrl);
         // then clone
-        System.out.println("Cloning from " + remoteURL + " to " + fileUrl);
+        log.info("Cloning from " + remoteURL + " to " + fileUrl);
         this.git = Git.cloneRepository()
                 .setURI(remoteURL)
                 .setDirectory(destinationFile)
@@ -32,7 +34,7 @@ public class GitRepo {
                 .setProgressMonitor(new CloneProgressMonitor())
                 .call();
         // Note: the call() returns an opened repository already which needs to be closed to avoid file handle leaks!
-        System.out.println("Having repository: " + git.getRepository().getDirectory());
+        log.info("Having repository: " + git.getRepository().getDirectory());
         git.close();
 
         // clean up here to not keep using more and more disk-space for these samples

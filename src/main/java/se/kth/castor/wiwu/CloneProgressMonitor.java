@@ -1,17 +1,19 @@
 package se.kth.castor.wiwu;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.lib.ProgressMonitor;
 
+@Slf4j
 class CloneProgressMonitor implements ProgressMonitor {
 
     @Override
     public void start(int totalTasks) {
-        System.out.println("Starting work on " + totalTasks + " tasks");
+        log.info("Starting work on " + totalTasks + " tasks");
     }
 
     @Override
     public void beginTask(String title, int totalWork) {
-        System.out.println("Start " + title + ": " + totalWork);
+        log.info("Start " + title + ": " + totalWork);
     }
 
     @Override
@@ -20,7 +22,7 @@ class CloneProgressMonitor implements ProgressMonitor {
 
     @Override
     public void endTask() {
-        System.out.println("Done!");
+        log.info("Done!");
     }
 
     @Override
