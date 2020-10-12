@@ -6,6 +6,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHTag;
 import org.kohsuke.github.GitHub;
+import org.kohsuke.github.GitHubBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +30,7 @@ public class GitHubRepo {
 
     public GitHubRepo(String repositoryName) throws IOException {
         this.repositoryName = repositoryName;
-        GitHub github = GitHub.connect();
+        GitHub github = GitHubBuilder.fromEnvironment().build();
         ghRepository = github.getRepository(repositoryName);
     }
 

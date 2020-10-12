@@ -64,6 +64,32 @@
             <artifactId>org.eclipse.jgit</artifactId>
             <version>5.9.0.202009080501-r</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.whitesource/maven-dependency-tree-parser -->
+        <dependency>
+            <groupId>org.whitesource</groupId>
+            <artifactId>maven-dependency-tree-parser</artifactId>
+            <version>1.0.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.velocity.tools</groupId>
+            <artifactId>velocity-tools-generic</artifactId>
+            <version>3.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.velocity.tools</groupId>
+            <artifactId>velocity-tools-view</artifactId>
+            <version>3.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.velocity.tools</groupId>
+            <artifactId>velocity-tools-view-jsp</artifactId>
+            <version>3.0</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>

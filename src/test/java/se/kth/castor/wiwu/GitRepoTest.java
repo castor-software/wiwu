@@ -1,6 +1,7 @@
 package se.kth.castor.wiwu;
 
-import org.eclipse.jgit.api.errors.GitAPIException;
+import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,18 +14,19 @@ class GitRepoTest {
 
     GitRepo gitRepo;
     String repoName;
+    File clonedRepoDir;
 
     @BeforeEach
     void setUp() {
         gitRepo = new GitRepo("giltene/jHiccup");
         repoName = "giltene/jHiccup";
+        clonedRepoDir = new File(
+                "src/test/resources/cloned" + "/" + repoName.split("/")[1]
+        );
     }
 
     @Test
-    void cloneRepository() throws IOException, GitAPIException, URISyntaxException {
-        var clonedRepoDir = new File(
-                "src/test/resources/cloned" + "/" + repoName.split("/")[1]
-        );
+    void cloneRepository() throws IOException {
         GitHubRepo gitHubRepo = new GitHubRepo(repoName);
         gitHubRepo.remoteRepository(clonedRepoDir);
         Assertions.assertTrue(clonedRepoDir.exists());
@@ -36,5 +38,10 @@ class GitRepoTest {
 
     @Test
     void tagNames() {
+    }
+
+    @AfterEach
+    void tearDown() throws URISyntaxException, IOException {
+        FileUtils.deleteDirectory(clonedRepoDir);
     }
 }
