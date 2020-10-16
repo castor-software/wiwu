@@ -1,20 +1,26 @@
 package se.kth.castor.wiwu;
 
+import fr.dutra.tools.maven.deptree.core.ParseException;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+@Slf4j
 public class App {
 
-    private static final String repositoryName = "giltene/jHiccup";
-    private static final File clonedRepositoryDir = new File(
-            "cloned-repository" + "/" + repositoryName.split("/")[1]
-    );
+    private static final String repositoryName = "INRIA/spoon";
+    private static final File clonedRepositoryDir = new File("cloned-repository" + "/" + repositoryName.split("/")[1]);
 
-    public static void main(String[] args) throws IOException, GitAPIException {
+    public static void main(String[] args) throws IOException, GitAPIException, ParseException {
+
         GitHubRepo gitHubRepo = new GitHubRepo(repositoryName);
+        Cmd cmd = new Cmd(clonedRepositoryDir);
         GitRepo gitRepo;
 
         if (!clonedRepositoryDir.exists()) {
@@ -23,16 +29,28 @@ public class App {
 
         Git git = Git.open(clonedRepositoryDir);
 
+        List<String> tagNames = new ArrayList<>();
         git.tagList()
                 .call()
-                .forEach(a -> System.out.println(a.getName()));
+                .forEach(a -> tagNames.add(a.getName().split("/")[a.getName().split("/").length - 1]));
 
         // TODO checkout the tag and apply DepClean there
-        git.checkout()
-                .setName("spoon-core-8.1.0")
-                .call();
+        for (String tagName : tagNames) {
+            git.checkout()
+                    .setName(tagName)
+                    .call();
+            File treeTXT = new File("cloned-repository" + "/" + "dependency-tree-" + tagName + ".txt");
+            File treeJSON = new File("cloned-repository" + "/" + "dependency-tree-" + tagName + ".json");
 
-        Cmd cmd = new Cmd(clonedRepositoryDir);
+            log.info("Getting dependency tree " + treeTXT.getName());
+            cmd.dependencyTree(treeTXT);
+
+            DepTree depTree = new DepTree(treeTXT.getAbsolutePath());
+            FileUtils.write(treeJSON, depTree.parseTreeToJSON());
+
+            log.info("Writing JSON depeendency tree " + treeJSON.getName());
+
+        }
 
     }
 }

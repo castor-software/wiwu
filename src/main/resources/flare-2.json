@@ -1,14 +1,15 @@
-{
-  "name": "flare",
-  "children": [
-    {
-      "name": "analytics",
-      "children": [
-        {
-          "name": "cluster",
-          "children": [
-            {
-              "name": "AgglomerativeCluster",
+[
+  {
+    "name": "flare",
+    "children": [
+      {
+        "name": "analytics",
+        "children": [
+          {
+            "name": "cluster",
+            "children": [
+              {
+                "name": "AgglomerativeCluster",
               "value": 3938
             },
             {
@@ -1038,3 +1039,4 @@
     }
   ]
 }
+]

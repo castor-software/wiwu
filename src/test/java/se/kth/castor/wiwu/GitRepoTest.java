@@ -28,14 +28,9 @@ class GitRepoTest {
         gitRepo = new GitRepo("giltene/jHiccup");
         repoName = "giltene/jHiccup";
         clonedRepoDir = new File(
-                "src/test/resources/cloned" + "/" + repoName.split("/")[1]
+                "src/test/resources/" + repoName.split("/")[1]
         );
         cmd = new Cmd(clonedRepoDir);
-    }
-
-    @AfterAll
-    static void afterAll() throws IOException {
-        FileUtils.deleteDirectory(clonedRepoDir);
     }
 
     @Test
@@ -60,15 +55,9 @@ class GitRepoTest {
         Assertions.assertTrue(file.exists());
     }
 
-    @Test
-    @Order(4)
-    void toJSON() throws IOException, ParseException {
-        DepTree depTree = new DepTree("src/test/resources/cloned/jHiccup/dependency-tree.txt");
-        String jsonResult = "{\"coordinates\":\"org.jhiccup:jHiccup:jar:2.0.11-SNAPSHOT\",\"children\":" +
-                "[{\"coordinates\":\"junit:junit:jar:4.10:test\",\"children\":[{\"coordinates\":" +
-                "\"org.hamcrest:hamcrest-core:jar:1.1:test\",\"children\":[]}]},{\"coordinates\":" +
-                "\"org.hdrhistogram:HdrHistogram:jar:2.1.11:compile\",\"children\":[]}]}";
-        Assertions.assertEquals(jsonResult, depTree.parseTreeToJSON());
+    @AfterAll
+    static void afterAll() throws IOException {
+        FileUtils.deleteDirectory(clonedRepoDir);
     }
 
     @Test
@@ -76,5 +65,16 @@ class GitRepoTest {
     void obtainDepCleanResult() {
         Map<String, Set<String>> result = cmd.depCleanResult();
         Assertions.assertFalse(result.isEmpty());
+    }
+
+    @Test
+    @Order(4)
+    void toJSON() throws IOException, ParseException {
+        DepTree depTree = new DepTree(clonedRepoDir.getAbsolutePath() + "/" + "dependency-tree.txt");
+        String jsonResult = "{\"coordinates\":\"org.jhiccup:jHiccup:jar:2.0.11-SNAPSHOT\",\"children\":" +
+                "[{\"coordinates\":\"junit:junit:jar:4.10:test\",\"children\":[{\"coordinates\":" +
+                "\"org.hamcrest:hamcrest-core:jar:1.1:test\",\"children\":[]}]},{\"coordinates\":" +
+                "\"org.hdrhistogram:HdrHistogram:jar:2.1.11:compile\",\"children\":[]}]}";
+        Assertions.assertEquals(jsonResult, depTree.parseTreeToJSON());
     }
 }
