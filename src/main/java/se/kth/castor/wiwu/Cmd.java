@@ -85,7 +85,7 @@ public class Cmd {
     }
 
     /**
-     * Writes the dependency tree of a Maven project to a file.
+     * Write the dependency tree of a Maven project to a file.
      *
      * @param outputFile A file with the dependency tree.
      * @return True if the dependency tree was obtained, false otherwise.
@@ -96,6 +96,29 @@ public class Cmd {
                 "dependency:tree",
                 "-DoutputFile=" + outputFile.getAbsolutePath(),
                 "-Dverbose=true"
+        };
+        try {
+            String line;
+            Process p = Runtime.getRuntime().exec(str, null, path);
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            while ((line = input.readLine()) != null) {
+                log.info(line);
+            }
+            input.close();
+        } catch (Exception e) {
+            log.error("Failed to run: " + e);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Execute the maven compile.
+     */
+    public boolean compileProject() {
+        String[] str = new String[]{
+                "mvn",
+                "test"
         };
         try {
             String line;
