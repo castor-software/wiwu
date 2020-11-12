@@ -28,6 +28,7 @@ public class Cmd {
      * @return A map of [dependency-status] -> [dependencies]
      */
     public Map<String, Set<String>> depCleanResult() {
+        log.info("Getting DepClean results");
         Map<String, Set<String>> result = new HashMap<>();
         String[] str = new String[]{
                 "mvn",
@@ -91,35 +92,30 @@ public class Cmd {
      * @return True if the dependency tree was obtained, false otherwise.
      */
     public boolean dependencyTree(File outputFile) {
+        log.info("Getting dependency tree " + outputFile);
         String[] str = new String[]{
                 "mvn",
                 "dependency:tree",
                 "-DoutputFile=" + outputFile.getAbsolutePath(),
                 "-Dverbose=true"
         };
-        try {
-            String line;
-            Process p = Runtime.getRuntime().exec(str, null, path);
-            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            while ((line = input.readLine()) != null) {
-                log.info(line);
-            }
-            input.close();
-        } catch (Exception e) {
-            log.error("Failed to run: " + e);
-            return false;
-        }
-        return true;
+        return printOutput(str);
     }
 
     /**
      * Execute the maven compile.
      */
     public boolean compileProject() {
+        log.info("Compiling project " + path);
         String[] str = new String[]{
                 "mvn",
-                "test"
+                "org.apache.maven.plugins:maven-compiler-plugin:3.7.0:compile",
+                "-Dmaven.compiler.source=1.8"
         };
+        return printOutput(str);
+    }
+
+    public boolean printOutput(String[] str) {
         try {
             String line;
             Process p = Runtime.getRuntime().exec(str, null, path);

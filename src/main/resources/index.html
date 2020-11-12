@@ -46,7 +46,6 @@
         $.getJSON("dependency-tree-spoon-core-4.3.0.json", function (result) {
             treeData = result;
 
-
             // ************** Generate the tree diagram	 *****************
             var margin = {top: 20, right: 120, bottom: 20, left: 120},
                 width = 960 - margin.right - margin.left,
@@ -201,35 +200,6 @@
 
         });
 
-        //   [
-        //     {
-        //         "name": "Top Level",
-        //         "parent": "null",
-        //         "children": [
-        //             {
-        //                 "name": "Level 2: A",
-        //                 "parent": "Top Level",
-        //                 "children": [
-        //                     {
-        //                         "name": "Son of A",
-        //                         "parent": "Level 2: A"
-        //                     },
-        //                     {
-        //                         "name": "Daughter of A",
-        //                         "parent": "Level 2: A"
-        //                     }
-        //                 ]
-        //             },
-        //             {
-        //                 "name": "Level 2: B",
-        //                 "parent": "Top Level"
-        //             }
-        //         ]
-        //     }
-        // ];
-
-
     </script>
-
 </body>
 </html>

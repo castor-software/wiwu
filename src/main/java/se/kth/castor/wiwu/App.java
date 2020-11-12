@@ -14,14 +14,15 @@ import java.util.List;
 @Slf4j
 public class App {
 
-    private static final String repositoryName = "INRIA/spoon";
+    // private static final String repositoryName = "INRIA/spoon";
+    private static final String repositoryName = "AsyncHttpClient/async-http-client";
+
     private static final File clonedRepositoryDir = new File("cloned-repository" + "/" + repositoryName.split("/")[1]);
 
     public static void main(String[] args) throws IOException, GitAPIException, ParseException {
-
         GitHubRepo gitHubRepo = new GitHubRepo(repositoryName);
         Cmd cmd = new Cmd(clonedRepositoryDir);
-        GitRepo gitRepo;
+        GitRepo gitRepo = null;
 
         if (!clonedRepositoryDir.exists()) {
             gitRepo = gitHubRepo.remoteRepository(clonedRepositoryDir);
@@ -41,16 +42,16 @@ public class App {
                     .call();
             File treeTXT = new File("cloned-repository" + "/" + "dependency-tree-" + tagName + ".txt");
             File treeJSON = new File("cloned-repository" + "/" + "dependency-tree-" + tagName + ".json");
+            File depcleanTXT = new File("cloned-repository" + "/" + "depclean" + tagName + ".txt");
 
-            log.info("Getting dependency tree " + treeTXT.getName());
             cmd.dependencyTree(treeTXT);
 
             DepTree depTree = new DepTree(treeTXT.getAbsolutePath());
             FileUtils.write(treeJSON, depTree.parseTreeToJSON());
 
-            log.info("Writing JSON depeendency tree " + treeJSON.getName());
+            cmd.compileProject();
+            FileUtils.write(depcleanTXT, cmd.depCleanResult().toString());
 
         }
-
     }
 }
