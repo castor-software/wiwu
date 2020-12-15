@@ -1,0 +1,63 @@
+---
+title: "DepClean history"
+author: César Soto Valero
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    css: main.css
+    number_sections: true
+    toc: false
+    toc_depth: 3
+    toc_float: 
+      collapsed: false
+---
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Clear the R environment
+rm(list=ls())
+# Import the header 
+source("header.R")
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Read the data
+raw_results <- read.delim("Data/results_depclean.csv", sep = ",", header = T, stringsAsFactors = TRUE)
+```
+
+
+# Bloat over time in dependencies
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+df <- raw_results %>%
+  filter(
+    Project == "mybatis_mybatis-3" |
+      Project == "jhy_jsoup" |
+      Project == "alibaba_fastjson" |
+      Project == "apache_commons-codec" |
+      Project == "jettison-json_jettison"
+  ) 
+
+library(plyr)
+freq <- count(df, vars = c("Project", "Status", "Version", "Order"))
+
+freq %>% 
+  ggplot(aes(Order, freq, color=Status)) +
+  geom_line() +
+  xlab("Version order") +
+  ylab("Count") +
+   theme(
+      legend.position="right",
+      # axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        # panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        # panel.grid.minor.x = element_blank()
+        ) +
+   facet_wrap(~Project,  ncol=1)
+
+```
+
+

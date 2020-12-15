@@ -1,0 +1,116 @@
+---
+title: "Initial analysis"
+author: César Soto Valero
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    css: main.css
+    number_sections: true
+    toc: false
+    toc_depth: 3
+    toc_float: 
+      collapsed: false
+---
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Import the header 
+source("header.R")
+# Clear the R environment
+rm(list=ls())
+```
+
+
+```{r echo=FALSE}
+# Read the data
+raw_results <- read.delim("Data/results.csv", sep = ",", header = T, stringsAsFactors = TRUE)
+```
+
+
+# Legend
+
+- **AUC**: Always Used Classes
+- **ABC**: Always Bloated Classes
+- **AUM**: Always Used Methods
+- **ABM**: Always Used Methods
+- **UTABC**: Used Then Always Bloated Classes
+- **UTABM**: Used Then Always Bloated Methods
+- **BTAUC**: Bloated Then Always Used Classes
+- **BTAUM**: Bloated Then Always Used Methods
+- **OCSC**: Oscillated Classes
+- **OCSM**: Oscillated Methods
+
+## Bloat evolution results
+
+```{r echo=FALSE, warning=FALSE}
+result_plot <- raw_results %>%
+  ggplot(aes(x = Lib, y = Count, fill = Metric, label = Count)) +
+  geom_bar(position="stack", stat="identity", width = 0.75) +
+  # geom_text(aes(label=Count), size = 2, position=position_dodge(width=0.75), hjust=-0.25) +
+  scale_fill_manual(values = c( "#00cd6c", "#ffc61e", "#a0b1ba", "#ff1f5d", "#00FFFF", "#af58ba", "#f28522", "#a6761d", "#000000", "#87ceeb")) +
+  coord_flip() +
+    theme(
+      legend.position="right",
+      # axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        # panel.grid.minor.x = element_blank()
+        ) 
+
+# green: #00cd6c
+# yellow: #ffc61e
+# gray: #a0b1ba
+# red: #ff1f5d
+# blue: #009ade
+# purple: #af58ba
+# orange: #f28522
+# brown: #a6761d
+
+# PLOT
+result_plot
+# save_figure(result_plot, "Figures/result_plot", 8, 2)
+```
+
+
+## Aggregated results per metric
+
+```{r echo=FALSE, warning=FALSE}
+result_plot <- raw_results %>%
+  ggplot(aes(x = Metric, y = Count, fill = Metric, label = Count)) +
+  geom_bar(position="stack", stat="identity", width = 0.75) +
+  # geom_text(aes(label=Count), size = 2, position=position_dodge(width=0.75), hjust=-0.25) +
+  scale_fill_manual(values = c( "#00cd6c", "#ffc61e", "#a0b1ba", "#ff1f5d", "#00FFFF", "#af58ba", "#f28522", "#a6761d", "#000000", "#87ceeb")) +
+  coord_flip() +
+    theme(
+      legend.position="right",
+      # axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        # panel.grid.minor.x = element_blank()
+        ) 
+
+result_plot
+```
+
+## Number of versions considered per library
+
+```{r echo=FALSE, warning=FALSE}
+result_plot <- raw_results %>%
+  ggplot(aes(x = Lib, y = NbVersions, fill = Lib)) +
+  geom_bar(position="dodge", stat="identity", width = 0.75) +
+  scale_fill_manual(values = c( "#00cd6c", "#ffc61e", "#a0b1ba", "#ff1f5d", "#00FFFF", "#af58ba", "#f28522", "#a6761d", "#000000", "#87ceeb")) +
+  coord_flip() +
+    theme(
+       legend.position="right",
+      # axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        # panel.grid.minor.x = element_blank()
+        ) 
+
+result_plot
+```

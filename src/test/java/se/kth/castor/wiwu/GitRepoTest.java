@@ -2,9 +2,11 @@ package se.kth.castor.wiwu;
 
 import fr.dutra.tools.maven.deptree.core.ParseException;
 import org.apache.commons.io.FileUtils;
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Disabled("To enable later")
 class GitRepoTest {
 
     static GitRepo gitRepo;
