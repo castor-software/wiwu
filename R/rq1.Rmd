@@ -1,0 +1,197 @@
+---
+title: "RQ1"
+author: César Soto Valero
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    css: main.css
+    number_sections: true
+    toc: false
+    toc_depth: 3
+    toc_float: 
+      collapsed: false
+---
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Import the header 
+source("header.R")
+# Clear the R environment
+rm(list=ls())
+```
+
+
+```{r echo=FALSE}
+# Read the data
+raw_results <- read.delim("Data/results_dependabot.csv", sep = ",", header = T, stringsAsFactors = TRUE)
+```
+
+# Preprocess the data
+
+```{r echo=FALSE}
+# Arrange by version
+results <- raw_results %>% 
+  mutate(VersionTMP = Version) %>%
+  separate(VersionTMP, c("V1", "V2", "V3"), "\\.") %>% 
+  mutate(V1 = as.numeric(V1), V2 = as.numeric(V2), V3 = as.numeric(V3)) %>% 
+  arrange(Project, V1, V2, V3)
+
+# Remove Versions with null values (TODO to be checked later)
+results <- results %>%
+  filter(Version != "null")
+  
+# Numbering rows withing groups
+results <- results %>% 
+  group_by(Project) %>% 
+  mutate(VersionOrder = row_number())
+
+results <- results %>% 
+  mutate(Used = UsedDirect + UsedTransitive, Bloated = BloatedDirect + BloatedTransitive)
+
+  
+View(results)
+```
+
+# Descriptive 
+
+```{r echo=FALSE}
+df <- results %>% count(Project)
+
+print(paste("Total projects:", nrow(df)))
+print(paste("Average size of the time series:", mean(df$n)))
+print(paste("Median size of the time series:", median(df$n)))
+print(paste("Max size of the time series:", max(df$n)))
+print(paste("Min size of the time series:", min(df$n)))
+```
+
+
+# Correlation between variables
+
+```{r echo=FALSE}
+df <- results %>% 
+  ungroup() %>% 
+  select(NbDependencies, BloatedDirect, BloatedTransitive, UsedDirect, UsedTransitive, Bloated, Used)
+
+cormat <- round(cor(df),2)
+library(corrplot)
+library(RColorBrewer)
+corrplot(cormat, type="upper", order="hclust",
+         col=brewer.pal(n=8, name="RdYlBu"))
+
+```
+
+
+```{r echo=FALSE}
+df <- results %>% 
+  ungroup() %>% 
+  select(Project, VersionOrder, Bloated) 
+
+df %>% 
+  ggplot(aes(VersionOrder, Bloated), color=Project) +
+  geom_point(alpha = 0.1) +
+  geom_line(alpha=0.1) 
+
+```
+
+
+```{r echo=FALSE}
+
+
+results %>%
+  filter(Project == "7le/shine-mq") %>%
+  select(VersionOrder, NbDependencies) %>%
+  ggplot(aes(x = VersionOrder, y = NbDependencies)) +
+  ylim(0, 43) +
+  geom_line() +
+  geom_point()
+
+library(jmotif)
+library(forecast)
+
+tmp <- results %>%
+  filter(Project == "7le/shine-mq") %>%
+  select(VersionOrder, NbDependencies)
+
+
+library(pkr)
+Slope(tmp$VersionOrder, tmp$NbDependencies)
+
+
+tmp$NbDependencies <- znorm(tmp$NbDependencies, threshold = 0.01)
+tmp %>%   
+ggplot(aes(x = VersionOrder, y = NbDependencies)) +
+  geom_line() +
+  geom_point()
+
+
+
+tmp <- results %>%
+  filter(Project == "0opslab/opslabJutil") %>%
+  select(VersionOrder, NbDependencies)
+
+tmp$NbDependencies <- znorm(tmp$NbDependencies, threshold = 0.01)
+tmp %>%   
+ggplot(aes(x = VersionOrder, y = NbDependencies)) +
+  geom_line() +
+  geom_point()
+
+time.series <- ts(tmp$NbDependencies) 
+
+plot(time.series)
+decompose(time.series, type = c("additive"))
+
+
+
+```
+
+
+```{r echo=FALSE}
+
+```
+
+
+```{r echo=FALSE}
+x <- 1:10
+y <- c(0, 0, -1, 0, -1, -1, 0, -1, -1, -1)
+plot(x, y)
+abline(mod <- lm(y ~ x))
+coef(mod)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
