@@ -19,8 +19,9 @@ loadfonts(device = "pdf")
 
 # set ggplot global theme
 theme_set(theme_bw() +
-            theme(legend.position = "top") +
-            theme(text = element_text(size = 18, family = "LM Roman 10")))
+            theme(legend.position = "top") # +
+            # theme(text = element_text(size = 14, family = "LM Roman 10"))
+          )
 
 # multiple figures together
 if(!require(devtools)) install.packages("devtools")

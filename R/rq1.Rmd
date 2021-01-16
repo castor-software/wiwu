@@ -24,31 +24,33 @@ rm(list=ls())
 
 ```{r echo=FALSE}
 # Read the data
-raw_results <- read.delim("Data/results_dependabot.csv", sep = ",", header = T, stringsAsFactors = TRUE)
+raw_results <- read.delim("Data/results_dependabot_with_commit_dates.csv", sep = ",", header = T, stringsAsFactors = TRUE)
 ```
 
 # Preprocess the data
 
 ```{r echo=FALSE}
+# Cast date variable from factor to Date
+raw_results$Date <- as.Date(raw_results$Date)
+
 # Arrange by version
 results <- raw_results %>% 
   mutate(VersionTMP = Version) %>%
   separate(VersionTMP, c("V1", "V2", "V3"), "\\.") %>% 
   mutate(V1 = as.numeric(V1), V2 = as.numeric(V2), V3 = as.numeric(V3)) %>% 
-  arrange(Project, V1, V2, V3)
+  arrange(Project, Date)
 
 # Remove Versions with null values (TODO to be checked later)
-results <- results %>%
-  filter(Version != "null")
+# results <- results %>%
+#   filter(Version != "null")
   
 # Numbering rows withing groups
 results <- results %>% 
   group_by(Project) %>% 
-  mutate(VersionOrder = row_number())
+  mutate(CommitOrder = row_number())
 
 results <- results %>% 
-  mutate(Used = UsedDirect + UsedTransitive, Bloated = BloatedDirect + BloatedTransitive)
-
+  mutate(TotalUsed = UsedDirect + UsedTransitive, TotalBloated = BloatedDirect + BloatedTransitive)
   
 View(results)
 ```
@@ -64,14 +66,12 @@ print(paste("Median size of the time series:", median(df$n)))
 print(paste("Max size of the time series:", max(df$n)))
 print(paste("Min size of the time series:", min(df$n)))
 ```
-
-
 # Correlation between variables
 
 ```{r echo=FALSE}
 df <- results %>% 
   ungroup() %>% 
-  select(NbDependencies, BloatedDirect, BloatedTransitive, UsedDirect, UsedTransitive, Bloated, Used)
+  select(NbDependencies, BloatedDirect, BloatedTransitive, UsedDirect, UsedTransitive, TotalBloated, TotalUsed)
 
 cormat <- round(cor(df),2)
 library(corrplot)
@@ -81,23 +81,178 @@ corrplot(cormat, type="upper", order="hclust",
 
 ```
 
+# Z-normalize the time series
+
+Simply put, a z-score (also called a standard score) gives you an idea of how far from the mean a data point is. But more technically it’s a measure of how many standard deviations below or above the population mean a raw score is. 
+
+Z-scores are a way to compare results to a “normal” population. Results from tests or surveys have thousands of possible results and units; those results can often seem meaningless. For example, knowing that someone’s weight is 150 pounds might be good information, but if you want to compare it to the “average” person’s weight, looking at a vast table of data can be overwhelming (especially if some weights are recorded in kilograms). A z-score can tell you where that person’s weight is compared to the average population’s mean weight.
 
 ```{r echo=FALSE}
+library(jmotif)
 df <- results %>% 
-  ungroup() %>% 
-  select(Project, VersionOrder, Bloated) 
+  select(Project, CommitOrder, TotalBloated, TotalUsed) %>% 
+  group_by(Project) %>% 
+  mutate(BloatedZnorm = znorm(TotalBloated)) %>% 
+  mutate(UsedZnorm = znorm(TotalUsed))
+```
+
+# Determine the time series for which the bloated deps are: increasing, decreasing, variable
+
+```{r}
+df <- results %>% 
+  select(Project, CommitOrder, TotalBloated, TotalUsed) %>% 
+  group_by(Project) %>% 
+  mutate(BloatIncreaseOnly = !is.unsorted(TotalBloated),
+         BloatDecreaseOnly = !is.unsorted(rev(TotalBloated)),
+         BloatIsVariable = ifelse(BloatIncreaseOnly == FALSE & BloatDecreaseOnly == FALSE, TRUE, FALSE)) %>% 
+  select(Project, BloatIncreaseOnly, BloatDecreaseOnly, BloatIsVariable) %>% 
+  distinct()
+
+summary(df)
+
+# Create plot
+tmp <- data.frame(Bloat = c("Increase only", "Decrease only", "Variable"), Projects = c(319, 192, 703))
+result_plot <- tmp %>%  ggplot(aes(Bloat, Projects, fill = Bloat)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label=Projects), vjust=-0.5) + 
+  ylim(0, 800) +
+  xlab("Bloat trend") +
+  ylab("Projects") +
+  theme(legend.position="none")
+
+# Save the plot
+ggsave(filename = "Figures/barplot_trend.pdf", plot = result_plot,
+       height = 4, width = 6,  units = c("in"), device = "pdf")
+save_figure(result_plot, "Figures/barplot_trend", 4, 2)
+```
+
+
+# Analyze the slope of the variable ts
+
+```{r}
+df <- results %>% 
+  select(Project, CommitOrder, TotalBloated, TotalUsed) %>% 
+  group_by(Project) %>% 
+  mutate(BloatIncreaseOnly = !is.unsorted(TotalBloated),
+         BloatDecreaseOnly = !is.unsorted(rev(TotalBloated)),
+         BloatIsVariable = ifelse(BloatIncreaseOnly == FALSE & BloatDecreaseOnly == FALSE, TRUE, FALSE)) %>% 
+  filter(BloatIsVariable == TRUE) # %>% 
+  # filter(Project == "7le/shine-mq" | Project == "adyliu/jafka")
+
+# Functions
+doModel <- function(dat) lm(CommitOrder ~ TotalBloated, dat)
+getSlope <- function(mod) coef(mod)[[2]]
+
+models <- df %>% 
+  group_by(Project) %>%
+  nest %>%
+  mutate(model = map(data, doModel)) %>% 
+  mutate(slope = map(model, getSlope))
+
+models
+
+
+# Make a plot for validation purposes
+# df %>% 
+#   ggplot(aes(CommitOrder, TotalBloated)) +
+#   geom_point() +
+#   geom_smooth(method='lm') +
+#   facet_grid(.~ Project)
+
+# Get all the slopes in a data frame
+slopes <- models$slope
+array_slopes <- c()
+for (i in 1:length(slopes)) {
+  array_slopes <- c(array_slopes, slopes[[i]])
+  print(slopes[[i]])
+}
+
+df_slopes <- data.frame(Slopes = array, Projects = models$Project)
+
+df_slopes <- df_slopes %>% 
+  mutate(Sign = ifelse(Slopes > 0, "Positive", "Negative"))
+
+tmp <- df_slopes %>% count(Sign)
+
+# Create plot
+result_plot <- tmp %>%  ggplot(aes(Sign, n, fill = Sign)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label=n), vjust=-0.5) + 
+  ylim(0, 600) +
+  xlab("Slope") +
+  ylab("Projects") +
+  theme(legend.position="none")
+
+# Save the plot
+ggsave(filename = "Figures/barplot_slope.pdf", plot = result_plot,
+       height = 4, width = 6,  units = c("in"), device = "pdf")
+save_figure(result_plot, "Figures/barplot_slope", 4, 2)
+
+df_slopes %>% 
+  ggplot(aes(x = "Slopes", y = Slopes )) +
+  geom_boxplot() +
+  coord_flip()
+
+```
+
+```{r}
+Type <- c("Monotonous", "Monotonous", "Variable", "Variable")
+Trend <- c("Increasing", "Decreasing", "Positive slope", "Negative slope")
+N <- c(319, 192, 525, 178)
+
+tmp <- data.frame(Type, Trend, N)
+
+tmp %>% 
+  ggplot(aes(Type, N, fill = Trend, label = N)) +
+  geom_bar(stat = "identity") + 
+  geom_text(size = 5, position = position_stack(vjust = 0.5)) +
+  xlab("Time series") +
+  ylab("#Projects") +
+  coord_flip()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# Fitting several regression models
+
+```{r}
+library(broom)
+
+lm <- df %>% 
+  group_by(Project) %>%
+  summarise(fit = lm(VersionOrder ~ Bloated)[[3]])
+  
+  
+  do(fitBloated = tidy(lm(VersionOrder ~ Bloated, data = .))) %>% 
+  unnest(fitBloated)
+
+tmp <- df %>% 
+  filter(Project == "0opslab/opslabJutil")
+x <- tmp$VersionOrder
+y <- tmp$Bloated
+plot(x, y)
+abline(mod <- lm(y ~ x))
+coef(mod)
 
 df %>% 
   ggplot(aes(VersionOrder, Bloated), color=Project) +
   geom_point(alpha = 0.1) +
   geom_line(alpha=0.1) 
 
+
 ```
 
 
 ```{r echo=FALSE}
-
-
 results %>%
   filter(Project == "7le/shine-mq") %>%
   select(VersionOrder, NbDependencies) %>%

@@ -1,5 +1,6 @@
 package se.kth.castor.wiwu.experiments.depclean.dependabot;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,7 @@ import java.util.Map;
 @Slf4j
 public class Main {
 
-   private static final String RESULTS_DEPENDABOT = "/Users/cesarsv/Documents/Experiments/resultsDependabot";
+   private static final String RESULTS_DEPENDABOT = "/Users/cesarsv/Documents/Experiments/resultsDependabot_with_dates";
 
    public static void main(String[] args) throws IOException {
 
@@ -41,6 +42,14 @@ public class Main {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readTree(content);
             String repo = jsonNode.get("repo").asText();
+
+            //another way
+            Map<String,String> commitDateMap = objectMapper.readValue(jsonNode.get("commit_dates").toPrettyString(),
+                    new TypeReference<HashMap<String,String>>() {});
+
+
+            // System.exit(-1);
+
 
             Iterator<JsonNode> itDependencies = jsonNode.at("/dependencies").elements();
             Map<Project, List<Dependency>> map = new HashMap<>();
@@ -102,6 +111,8 @@ public class Main {
                        .append(",")
                        .append(project.getSha())
                        .append(",")
+                       .append(commitDateMap.get(project.getSha()))
+                       .append(",")
                        .append(project.getVersion().replace(",", "."))
                        .append(",")
                        .append(total)
@@ -122,7 +133,7 @@ public class Main {
 
       // Write the CSV file
       String body = sb.toString();
-      File csv = new File("/Users/cesarsv/IdeaProjects/wiwu/R/Data/results_dependabot.csv");
+      File csv = new File("/Users/cesarsv/IdeaProjects/wiwu/R/Data/results_dependabot_with_commit_dates.csv");
       writeToCSV(body, csv);
 
    }
@@ -130,6 +141,7 @@ public class Main {
    public static void writeToCSV(String body, File file) throws IOException {
       String header = "Project," +
               "Commit," +
+              "Date," +
               "Version," +
               "NbDependencies," +
               "BloatedDirect," +

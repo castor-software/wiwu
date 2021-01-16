@@ -67,3 +67,4 @@ buildNumber.properties
 *.Ruserdata
 *.Rproj
 
+.Rproj.user
