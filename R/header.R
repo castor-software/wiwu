@@ -17,6 +17,10 @@ loadfonts(device = "pdf")
 # font_import(pattern = "lmroman*")
 # theme(legend.position = "top", text=element_text(size=14, family="LM Roman 10"))
 
+# library(cowplot)
+# font_import()
+# fonts()
+
 # set ggplot global theme
 theme_set(theme_bw() +
             theme(legend.position = "top") # +

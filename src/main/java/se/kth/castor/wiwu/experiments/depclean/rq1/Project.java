@@ -1,4 +1,4 @@
-package se.kth.castor.wiwu.experiments.depclean.dependabot;
+package se.kth.castor.wiwu.experiments.depclean.rq1;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

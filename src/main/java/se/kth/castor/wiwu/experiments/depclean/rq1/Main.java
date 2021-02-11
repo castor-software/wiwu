@@ -1,4 +1,4 @@
-package se.kth.castor.wiwu.experiments.depclean.dependabot;
+package se.kth.castor.wiwu.experiments.depclean.rq1;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -46,10 +46,6 @@ public class Main {
             //another way
             Map<String,String> commitDateMap = objectMapper.readValue(jsonNode.get("commit_dates").toPrettyString(),
                     new TypeReference<HashMap<String,String>>() {});
-
-
-            // System.exit(-1);
-
 
             Iterator<JsonNode> itDependencies = jsonNode.at("/dependencies").elements();
             Map<Project, List<Dependency>> map = new HashMap<>();

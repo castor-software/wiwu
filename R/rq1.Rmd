@@ -1,5 +1,5 @@
 ---
-title: "RQ1"
+title: "RQ1: How does the number of bloated dependencies evolve across releases?"
 author: César Soto Valero
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -55,6 +55,10 @@ projects_single_commit <- results %>%
   filter(n == 1)
 
 results <- results[!(results$Project %in% projects_single_commit$Project),]
+
+# Total number of commits
+projects_lengths <- results %>% select(Project) %>% group_by(Project) %>% summarise(nbCommits = n())
+results <- inner_join(results, projects_lengths, by = "Project")
   
 View(results)
 ```
@@ -99,6 +103,10 @@ df <- results %>%
   select(Project, BloatIncreaseOnly, BloatDecreaseOnly, BloatIsStable, BloatIsVariable) %>% 
   distinct()
 
+bloated_direct_df <- df %>% 
+  mutate(Type = ifelse(BloatIncreaseOnly == TRUE, "inc_only", 
+                       ifelse(BloatDecreaseOnly == TRUE, "dec_only", 
+                              ifelse(BloatIsStable == TRUE, "stable", "variable")))) %>% select(Project, Type)
 summary(df)
 inc_only_bd <- table(df$BloatIncreaseOnly)[2]
 dec_only_bd <- table(df$BloatDecreaseOnly)[2]
@@ -109,18 +117,17 @@ var_bd <- table(df$BloatIsVariable)[2]
 tmp <- data.frame(Bloat = c("Increase", "Decrease", "Stable", "Variable"), Projects = c(inc_only_bd, dec_only_bd, sta_bd, var_bd))
 result_plot <- tmp %>%  ggplot(aes(Bloat, Projects, fill = Bloat)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label=Projects), vjust=-0.5) + 
+  geom_text(aes(label=Projects), vjust=-0.5,  family="Linux Biolinum") + 
   ylim(0, 800) +
   xlab("Bloat trend") +
   ylab("Projects") +
   ggtitle("bloated-direct") +
-  theme(legend.position="none")
+  theme(legend.position="none", text = element_text(size = 14, family="Linux Biolinum"))
 
 # Save the plot
+result_plot
 ggsave(filename = "Figures/barplot_trend_bd.pdf", plot = result_plot,
        height = 2, width = 4,  units = c("in"), device = "pdf")
-save_figure(result_plot, "Figures/barplot_trend_bd", 4, 2)
-
 ```
 
 ## Bloated transitive
@@ -135,6 +142,11 @@ df <- results %>%
          BloatIsVariable = ifelse(BloatIncreaseOnly == FALSE & BloatDecreaseOnly == FALSE && BloatIsStable == FALSE, TRUE, FALSE)) %>% 
   select(Project, BloatIncreaseOnly, BloatDecreaseOnly, BloatIsStable, BloatIsVariable) %>% 
   distinct()
+
+bloated_transitive_df <- df %>% 
+  mutate(Type = ifelse(BloatIncreaseOnly == TRUE, "inc_only", 
+                       ifelse(BloatDecreaseOnly == TRUE, "dec_only", 
+                              ifelse(BloatIsStable == TRUE, "stable", "variable")))) %>% select(Project, Type)
 
 summary(df)
 
@@ -155,10 +167,9 @@ result_plot <- tmp %>%  ggplot(aes(Bloat, Projects, fill = Bloat)) +
   theme(legend.position="none")
 
 # Save the plot
+result_plot
 ggsave(filename = "Figures/barplot_trend_bt.pdf", plot = result_plot,
        height = 2, width = 4,  units = c("in"), device = "pdf")
-save_figure(result_plot, "Figures/barplot_trend_bt", 4, 2)
-
 ```
 
 # Analyze the slope of the variable ts
@@ -173,8 +184,7 @@ df <- results %>%
          BloatDecreaseOnly = !is.unsorted(rev(BloatedDirect)) & var(BloatedDirect) != 0,
          BloatIsStable = ifelse(var(BloatedDirect) == 0, TRUE, FALSE),
          BloatIsVariable = ifelse(BloatIncreaseOnly == FALSE & BloatDecreaseOnly == FALSE && BloatIsStable == FALSE, TRUE, FALSE)) %>% 
-  filter(BloatIsVariable == TRUE) # %>% 
-  # filter(Project == "7le/shine-mq" | Project == "adyliu/jafka")
+  filter(BloatIsVariable == TRUE)  
 
 # Functions
 doModel <- function(dat) lm(CommitOrder ~ BloatedDirect, dat)
@@ -185,15 +195,6 @@ models <- df %>%
   nest %>%
   mutate(model = map(data, doModel)) %>% 
   mutate(slope = map(model, getSlope))
-
-models
-
-# Make a plot for validation purposes
-# df %>% 
-#   ggplot(aes(CommitOrder, BloatedDirect)) +
-#   geom_point() +
-#   geom_smooth(method='lm') +
-#   facet_grid(.~ Project)
 
 # Get all the slopes in a data frame
 slopes <- models$slope
@@ -207,6 +208,12 @@ df_slopes <- data.frame(Slopes = array_slopes, Projects = models$Project)
 
 df_slopes <- df_slopes %>% 
   mutate(Sign = ifelse(Slopes > 0, "inc", "dec"))
+
+bloated_direct_df <- df_slopes %>% 
+  rename(Project = Projects) %>% 
+  full_join(bloated_direct_df, by = "Project") %>% 
+  mutate(Type = ifelse(Type == "variable", Sign, Type)) %>% 
+  select(Project, Type)
 
 tmp <- df_slopes %>% count(Sign)
 
@@ -225,9 +232,9 @@ result_plot <- tmp %>%
   theme(legend.position="none")
 
 # Save the plot
+result_plot
 ggsave(filename = "Figures/barplot_slope_bd.pdf", plot = result_plot,
        height = 2, width = 4,  units = c("in"), device = "pdf")
-save_figure(result_plot, "Figures/barplot_slope_bd", 4, 2)
 ```
 
 ## Bloated transitive
@@ -253,15 +260,6 @@ models <- df %>%
   mutate(model = map(data, doModel)) %>% 
   mutate(slope = map(model, getSlope))
 
-models
-
-# Make a plot for validation purposes
-# df %>% 
-#   ggplot(aes(CommitOrder, BloatedTransitive)) +
-#   geom_point() +
-#   geom_smooth(method='lm') +
-#   facet_grid(.~ Project)
-
 # Get all the slopes in a data frame
 slopes <- models$slope
 array_slopes <- c()
@@ -274,6 +272,12 @@ df_slopes <- data.frame(Slopes = array_slopes, Projects = models$Project)
 
 df_slopes <- df_slopes %>% 
   mutate(Sign = ifelse(Slopes > 0, "inc", "dec"))
+
+bloated_transitive_df <- df_slopes %>% 
+  rename(Project = Projects) %>% 
+  full_join(bloated_transitive_df, by = "Project") %>% 
+  mutate(Type = ifelse(Type == "variable", Sign, Type)) %>% 
+  select(Project, Type)
 
 tmp <- df_slopes %>% count(Sign)
 
@@ -292,9 +296,281 @@ result_plot <- tmp %>%
   theme(legend.position="none")
 
 # Save the plot
+result_plot
 ggsave(filename = "Figures/barplot_slope_bt.pdf", plot = result_plot,
        height = 2, width = 4,  units = c("in"), device = "pdf")
-save_figure(result_plot, "Figures/barplot_slope_bt", 4, 2)
+```
+
+
+```{r}
+bloated_direct_df_modified <- bloated_direct_df %>% 
+  rename(TypeDirect = Type) %>% 
+  arrange(desc(Project))
+
+bloated_transitive_df_modified <- bloated_transitive_df %>%
+  rename(TypeTransitive = Type)  %>% 
+  arrange(desc(Project))
+
+df <- inner_join(bloated_direct_df_modified, bloated_transitive_df_modified, by = "Project") 
+
+df$TypeDirect <- factor(df$TypeDirect, levels = c("inc_only", "dec_only", "inc", "dec", "stable"))
+df$TypeTransitive <- factor(df$TypeTransitive, levels = c("inc_only", "dec_only", "inc", "dec", "stable"))
+
+result_plot <- df %>% 
+  rename(`Bloated-transitive trend` = TypeTransitive) %>% 
+  ggplot(aes(x = TypeDirect, fill = `Bloated-transitive trend`)) +
+  geom_bar() +
+  geom_text(stat='count', position = position_stack(vjust = 0.5), aes(label=..count..)) +
+  scale_fill_manual(values = c("#009ade", "#ffc61e", "#00cd6c", "#ff1f5d", "#af58ba")) +
+  xlab("Bloated-direct trend") +
+  ylab("#Projects") +
+  coord_flip()
+
+result_plot
+
+df$TypeDirect <- as.character(df$TypeDirect)
+df$TypeTransitive <- as.character(df$TypeTransitive)
+
+df_merged <- df %>% 
+  mutate(TypeDirect = ifelse(TypeDirect == "dec_only", "dec", ifelse(TypeDirect == "inc_only", "inc", TypeDirect)),
+          TypeTransitive = ifelse(TypeTransitive == "dec_only", "dec", ifelse(TypeTransitive == "inc_only", "inc", TypeTransitive))) %>%
+  rename(`Bloated-transitive trend` = TypeTransitive) 
+
+df_merged$TypeDirect <- factor(df_merged$TypeDirect, levels = c("dec", "stable", "inc" ))
+df_merged$`Bloated-transitive trend` <- factor(df_merged$`Bloated-transitive trend`, levels = c("inc", "dec", "stable"))
+
+result_plot_merged <- df_merged %>% 
+  ggplot(aes(x = TypeDirect, fill = `Bloated-transitive trend`))+
+  geom_bar(stat = "count") +
+  geom_text(stat='count', position = position_stack(vjust = 0.5), aes(label=..count..),  family="Linux Biolinum") +
+  scale_fill_manual(values = c("#ff1f5d", "#00cd6c", "#ffc61e")) +
+  xlab("Bloated-direct trend") +
+  ylab("#Projects") +
+  coord_flip() +
+  theme(text = element_text(size = 14, family="Linux Biolinum"))
+
+result_plot_merged
+ggsave(filename = "Figures/barplot_trend_stacked.svg", plot = result_plot_merged,
+       height = 2.5, width = 6,  units = c("in"))
+
+  
+ggsave(filename = "Figures/barplot_trend_stacked.pdf", plot = result_plot,
+       height = 3, width = 6,  units = c("in"), device = "pdf")
+
+```
+
+# Box plot of the difference between the end and the last value of the ts for each group
+
+```{r}
+# Direct
+df_last <- results %>% 
+  select(Project) %>% 
+  group_by(Project) %>% 
+  summarise(CommitOrder = n())
+
+tmp <- results %>% 
+  select(Project, CommitOrder, BloatedDirect)
+
+df_last_direct <- inner_join(df_last, tmp, by = c("Project", "CommitOrder")) %>% 
+  rename(Last = BloatedDirect) %>% 
+  select(Project, Last)
+
+df_first_direct <- results %>% 
+  filter(CommitOrder == 1) %>% 
+  mutate(First = BloatedDirect) %>% 
+  select(Project, First)
+
+df_direct <- inner_join(df_last_direct, df_first_direct, by = "Project") %>% 
+  mutate(Type = "bloated-direct")
+
+# Transitive
+df_last <- results %>% 
+  select(Project) %>% 
+  group_by(Project) %>% 
+  summarise(CommitOrder = n())
+
+tmp <- results %>% 
+  select(Project, CommitOrder, BloatedTransitive)
+
+df_last_transitive <- inner_join(df_last, tmp, by = c("Project", "CommitOrder")) %>% 
+  rename(Last = BloatedTransitive) %>% 
+  select(Project, Last)
+
+df_first_transitive <- results %>% 
+  filter(CommitOrder == 1) %>% 
+  mutate(First = BloatedTransitive) %>% 
+  select(Project, First)
+
+df_transitive <- inner_join(df_last_transitive, df_first_transitive, by = "Project") %>% 
+  mutate(Type = "bloated-transitive")
+
+
+bloated_direct_df <- bloated_direct_df %>% 
+  rename(Class = Type)
+
+bloated_transitive_df <- bloated_transitive_df %>% 
+  rename(Class = Type)
+
+
+# inner joing with the classes
+df_direct <- inner_join(df_direct, bloated_direct_df, by = "Project")
+df_transitive <- inner_join(df_transitive, bloated_transitive_df, by = "Project")
+
+
+# Direct and transitive
+df <- bind_rows(df_direct, df_transitive)
+
+# Count the numbers 
+
+df %>% 
+  select(Project, Type, Class) %>% 
+  
+
+
+
+df <- df %>% pivot_longer(!c(Project, Type, Class), names_to = "Commit", values_to = "Count")
+df$Commit <- factor(df$Commit, levels = c("First", "Last"))
+
+# Plot
+result_plot <- df %>% 
+  filter(Class != "stable") %>% 
+  ggplot(aes(x=Class, y=Count, fill = Commit)) +
+  # geom_violin() +
+  geom_boxplot(width = 0.5, outlier.size = 0.1) +
+  coord_flip() +
+  xlab("Trend") +
+  ylab("#Dependencies") +
+  ylim(0, 200) +
+  scale_fill_manual(values = c("#009ade", "#ffc61e", "#00cd6c", "#ff1f5d", "#af58ba")) +
+  scale_y_continuous(labels = comma) +
+  facet_wrap(Type ~ ., ncol = 1, scales = "free") 
+# +
+#   theme(legend.position="none")
+
+result_plot
+
+ggsave(filename = "Figures/boxplot_trend_cmp.pdf", plot = result_plot,
+       height = 3.5, width = 4.5,  units = c("in"), device = "pdf")
+
+```
+
+
+# Bloat trend and relative position of pom commits
+
+```{r}
+
+tmp <- results %>% 
+  select(Project, BloatedDirect, UsedDirect, BloatedTransitive, UsedTransitive) %>% 
+  group_by(Project) %>% 
+  summarise(MaxUsedDirect = max(UsedDirect),
+            MaxUsedTransitive = max(UsedTransitive),
+            MaxBloatedDirect = max(BloatedDirect),
+            MaxBloatedTransitive = max(BloatedTransitive))
+
+tmp <- inner_join(results, tmp, by = "Project") %>%
+     mutate(RelUsedDirect = UsedDirect/MaxUsedDirect,
+         RelUsedTransitive = UsedTransitive/MaxUsedTransitive,
+         RelBloatedDirect = BloatedDirect/MaxBloatedDirect,
+         RelBloatedTransitive = BloatedTransitive/MaxBloatedTransitive,
+         PosRelativeCommit = CommitOrder/nbCommits)
+
+result_plot <- tmp %>% 
+  select(Project, RelUsedDirect, RelUsedTransitive, RelBloatedDirect, RelBloatedTransitive, PosRelativeCommit) %>% 
+  pivot_longer(!c(Project, PosRelativeCommit), names_to = "Class", values_to = "Count") %>% 
+  mutate(Class = ifelse(Class == "RelUsedDirect", "used-direct",
+                        ifelse(Class == "RelUsedTransitive", "used-transitive",
+                               ifelse(Class == "RelBloatedTransitive", "bloated-transitive", "bloated-direct")))) %>%
+  mutate(Type = ifelse(Class == "used-direct" | Class == "bloated-direct", "direct dependencies", "transitive dependencies")) %>% 
+  mutate(`Usage status` = ifelse(Class == "used-direct" | Class == "used-transitive", "used", "bloated"))  %>% 
+  ggplot(aes(x = PosRelativeCommit, y = Count, color = `Usage status`)) +
+  geom_smooth() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 5L)) +
+  scale_colour_manual(values = c("#ff1f5d", "#00cd6c" )) +
+  ylab("%Dependencies") +
+  xlab("Relative position of pom commits")  +
+  facet_wrap(Type ~ ., ncol = 1, scales = "free") +
+  theme(text = element_text(size = 14, family="Linux Biolinum"))
+
+ggsave(filename = "Figures/lineplot_trends.svg", plot = result_plot,
+       height = 3.25, width = 4.25,  units = c("in"))
+
+# green: #00cd6c
+# yellow: #ffc61e
+# gray: #a0b1ba
+# red: #ff1f5d
+# blue: #009ade
+
+```
+
+
+
+
+```{r}
+# Direct
+df_last <- results %>% 
+  select(Project) %>% 
+  group_by(Project) %>% 
+  summarise(CommitOrder = n())
+
+tmp <- results %>% 
+  select(Project, CommitOrder, BloatedDirect)
+
+df_last_direct <- inner_join(df_last, tmp, by = c("Project", "CommitOrder")) %>% 
+  rename(Last = BloatedDirect) %>% 
+  select(Project, Last)
+
+df_first_direct <- results %>% 
+  filter(CommitOrder == 1) %>% 
+  mutate(First = BloatedDirect) %>% 
+  select(Project, First)
+
+df_direct <- inner_join(df_last_direct, df_first_direct, by = "Project") %>% 
+  mutate(Type = "bloated-direct")
+
+# Transitive
+df_last <- results %>% 
+  select(Project) %>% 
+  group_by(Project) %>% 
+  summarise(CommitOrder = n())
+
+tmp <- results %>% 
+  select(Project, CommitOrder, BloatedTransitive)
+
+df_last_transitive <- inner_join(df_last, tmp, by = c("Project", "CommitOrder")) %>% 
+  rename(Last = BloatedTransitive) %>% 
+  select(Project, Last)
+
+df_first_transitive <- results %>% 
+  filter(CommitOrder == 1) %>% 
+  mutate(First = BloatedTransitive) %>% 
+  select(Project, First)
+
+df_transitive <- inner_join(df_last_transitive, df_first_transitive, by = "Project") %>% 
+  mutate(Type = "bloated-transitive")
+
+# Direct and transitive
+df <- bind_rows(df_direct, df_transitive)
+
+df <- df %>% pivot_longer(!c(Project, Type), names_to = "Commit", values_to = "Count")
+df$Commit <- factor(df$Commit, levels = c("Last", "First"))
+
+# Plot
+result_plot <- df %>% 
+  ggplot(aes(x=Commit, y=Count, fill = Commit)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = "white") +
+  coord_flip() +
+  xlab("Commit") +
+  ylab("#Dependencies") +
+  scale_y_continuous(labels = comma) +
+  facet_wrap(Type ~ ., ncol = 1, scales = "free") +
+  theme(legend.position="none")
+
+result_plot
+
+# Save the plot
+ggsave(filename = "Figures/boxplot_first_last.pdf", plot = result_plot,
+       height = 2.75, width = 4.5,  units = c("in"), device = "pdf")
 ```
 
 
@@ -314,14 +590,157 @@ result_plot <- tmp %>%  ggplot(aes(Bloat, Projects, fill = Bloat)) +
   ylim(0, 600) +
   xlab("Bloat trend") +
   ylab("#Projects") +
-  facet_grid(Type ~ .) +
+  facet_wrap(Type ~ ., ncol = 1) +
   theme(legend.position="none")
 
 # Save the plot
+result_plot
 ggsave(filename = "Figures/barplot_trend.pdf", plot = result_plot,
-       height = 3, width = 4,  units = c("in"), device = "pdf")
-save_figure(result_plot, "Figures/barplot_trend", 4, 3)
+       height = 2.75, width = 4.5,  units = c("in"), device = "pdf")
 ```
+
+# Total number of dependencies in each type
+
+```{r}
+# Rename columns
+bloated_direct_df <- bloated_direct_df %>% 
+  rename(TypeDirect = Type)
+
+bloated_transitive_df <- bloated_transitive_df %>% 
+  rename(TypeTransitive = Type)
+
+bloated_types_direct_transitive_df <- inner_join(bloated_direct_df, bloated_transitive_df, by = "Project")
+
+
+df <- results %>%
+  group_by(Project) %>% 
+  summarise(`bloated-direct` = sum(BloatedDirect), `bloated-transitive` = sum(BloatedTransitive)) %>% 
+  inner_join(bloated_types_direct_transitive_df, by = "Project")
+
+df <- df %>% 
+   select(-Project, -TypeDirect) %>% 
+   pivot_longer(!c(`bloated-direct`, `bloated-transitive`), names_to = "Type", values_to = "Trend") %>% 
+   pivot_longer(!c(Trend, Type), names_to = "Total", values_to = "Count") %>% 
+   select(-Type) %>% 
+  group_by(Trend, Total) %>% 
+  summarise(Count = sum(Count)) 
+
+df$Trend <- factor(df$Trend, levels = c("inc_only", "dec_only", "inc", "dec", "stable"))
+
+result_plot <- df %>% 
+   ggplot(aes(Trend, Count, fill = Trend)) +
+    geom_bar(stat = "identity") +
+    geom_text(aes(label=scales::comma(Count)), vjust=-0.5) + 
+    xlab("Bloat trend") +
+    ylab("#Dependencies") +
+    scale_y_continuous(labels = comma) +
+    facet_wrap(Total ~ ., ncol = 1, scales = "free") +
+    theme(legend.position="none")
+ 
+# Save the plot
+ggsave(filename = "Figures/barplot_trend_dependencies.pdf", plot = result_plot,
+       height = 2.75, width = 4.5,  units = c("in"), device = "pdf")
+```
+
+# Frequency of commmits with respect to the number of bloated-direct and bloated-transitive
+
+```{r}
+# Direct
+df_last <- results %>% 
+  select(Project) %>% 
+  group_by(Project) %>% 
+  summarise(CommitOrder = n())
+
+tmp <- results %>% 
+  select(Project, CommitOrder, BloatedDirect, Date)
+
+df_last_direct <- inner_join(df_last, tmp, by = c("Project", "CommitOrder")) %>% 
+  rename(Last = BloatedDirect) %>% 
+  select(Project, Last, Date) %>% 
+  rename(DateLast = Date)
+
+df_first_direct <- results %>% 
+  filter(CommitOrder == 1) %>% 
+  mutate(First = BloatedDirect) %>% 
+  select(Project, First, Date) %>% 
+  rename(DateFirst = Date)
+
+df_direct <- inner_join(df_last_direct, df_first_direct, by = "Project") %>% 
+  mutate(Type = "bloated-direct")
+
+
+# data frame with the number of days
+df_days <- df_direct %>%
+  mutate(Days = as.numeric(DateLast - DateFirst))
+
+
+df_nb_commits <- results %>% 
+  select(Project) %>% 
+  group_by(Project) %>% 
+  summarise(Commits = n())
+
+df_direct <- inner_join(df_days, df_nb_commits, by = "Project") %>% 
+  mutate(CommitFreq = Days/Commits)
+
+df_direct %>% 
+  ggplot(aes(x = CommitFreq, y = Last)) +
+  geom_point() +
+  geom_smooth()
+
+
+
+# Transitive
+df_last <- results %>% 
+  select(Project) %>% 
+  group_by(Project) %>% 
+  summarise(CommitOrder = n())
+
+tmp <- results %>% 
+  select(Project, CommitOrder, BloatedTransitive, Date)
+
+df_last_transitive <- inner_join(df_last, tmp, by = c("Project", "CommitOrder")) %>% 
+  rename(Last = BloatedTransitive) %>% 
+  select(Project, Last, Date) %>% 
+  rename(DateLast = Date)
+
+df_first_transitive <- results %>% 
+  filter(CommitOrder == 1) %>% 
+  mutate(First = BloatedTransitive) %>% 
+  select(Project, First, Date) %>% 
+  rename(DateFirst = Date)
+
+df_transitive <- inner_join(df_last_transitive, df_first_transitive, by = "Project") %>% 
+  mutate(Type = "bloated-transitive")
+
+# data frame with the number of days
+df_days <- df_transitive %>%
+  mutate(Days = as.numeric(DateLast - DateFirst))
+
+df_nb_commits <- results %>% 
+  select(Project) %>% 
+  group_by(Project) %>% 
+  summarise(Commits = n())
+
+df_transitive <- inner_join(df_days, df_nb_commits, by = "Project") %>% 
+  mutate(CommitFreq = Days/Commits)
+
+# Plot
+result_plot <- bind_rows(df_direct, df_transitive) %>% 
+  ggplot(aes(x = CommitFreq, y = Last)) +
+  geom_point() +
+  geom_smooth() +
+  ylab("#Dependencies") +
+  xlab("Commit frequency (#days/#commits)") +
+  facet_wrap(Type ~ ., ncol = 1, scales = "free") 
+
+
+# Save the plot
+ggsave(filename = "Figures/dotplot_freq.pdf", plot = result_plot,
+       height = 2.75, width = 4.5,  units = c("in"), device = "pdf")
+save_figure(result_plot, "Figures/dotplot_freq.pdf", 4, 3)
+
+```
+
 
 
 # Box plot of the length of time series for each class
@@ -337,7 +756,6 @@ df <- results %>%
   mutate(Class = ifelse(BloatIncreaseOnly == T, "inc_only", 
                         ifelse(BloatDecreaseOnly == T, "dec_only", 
                                ifelse(BloatIsStable == T, "stable", "variable")))) %>% select(Project, Class)
-
 df_class_count <- df %>%
   count(Class)
 
@@ -359,53 +777,21 @@ result_plot <- df_classes %>%
   scale_y_log10() +
   theme(legend.position="none")
 
+
+
+
 # Save the plot
 ggsave(filename = "Figures/boxplot_length.pdf", plot = result_plot,
        height = 2, width = 4,  units = c("in"), device = "pdf")
-save_figure(result_plot, "Figures/barplot_slope", 4, 2)
 ```
 
-# Box plot of the difference between the end and the last value of the ts
 
-```{r}
-df_last <- results %>% 
-  select(Project) %>% 
-  group_by(Project) %>% 
-  summarise(CommitOrder = n())
-
-tmp <- results %>% 
-  select(Project, CommitOrder, TotalBloated)
-
-df_last <- inner_join(df_last, tmp, by = c("Project", "CommitOrder")) %>% 
-  rename(LastBloat = TotalBloated)
-
-df_first <- results %>% 
-  filter(CommitOrder == 1) %>% 
-  mutate(FirstBloat = TotalBloated) %>% 
-  select(Project, FirstBloat)
-
-
-# Difference between last and first bloat
-df <- full_join(df_first, df_last) %>% 
-  mutate(BloatDiff = LastBloat - FirstBloat) %>% 
-  mutate(Trend = ifelse(BloatDiff > 0, "Positive", ifelse(BloatDiff < 0, "Negative", "Zero")))
-
-table(df$Trend)
-
-df %>% 
-  ggplot(aes(x="Bloat diff", y=BloatDiff)) +
-   geom_violin(aes(fill = "red")) +
-  geom_boxplot(width = 0.1) +
-  coord_flip()
-  
-```
 
 # Line plot
 
 ```{r}
 View(df_classes %>% 
   filter(n > 30 & n<100))
-
 
 df <- results %>% 
   filter(Project %in% c("codelibs/elasticsearch-dataformat",
@@ -420,20 +806,42 @@ df <- results %>%
   select(Project, CommitOrder, TotalBloated, `Bloat trend`) 
 
 
+# A function factory for getting integer y-axis values.
+integer_breaks <- function(n = 5, ...) {
+fxn <- function(x) {
+breaks <- floor(pretty(x, n, ...))
+names(breaks) <- attr(breaks, "labels")
+breaks
+}
+return(fxn)
+}
+
 df$`Bloat trend` <- factor(df$`Bloat trend`, levels = c("inc_only", "dec_only", "inc", "dec", "stable"))
 result_plot <- df %>% 
+  filter(`Bloat trend` != "inc_only" & `Bloat trend` != "dec_only") %>% 
   ggplot(aes(CommitOrder, TotalBloated)) +
-  geom_point(aes(shape = `Bloat trend`, color = Project)) +
+  # geom_point(aes(color = Project)) +
   geom_line(aes(color = Project)) +
-  theme(legend.position="right") +
-  xlab("Length") +
-  ylab("Value")
+  scale_y_continuous(breaks = integer_breaks()) +
+  facet_wrap(`Bloat trend` ~ ., scales='free') +
+  xlab("Ordered commits") +
+  ylab("# Bloated dependencies") +
+  theme(legend.text=element_text(size=rel(0.75), family="Linux Biolinum"), text = element_text(size = 14, family="Linux Biolinum"))
 
+result_plot
 
 # Save the plot
 ggsave(filename = "Figures/lineplot_projects.pdf", plot = result_plot,
-       height = 3, width = 5,  units = c("in"), device = "pdf")
+       height = 2, width = 6,  units = c("in"), device = "pdf")
 save_figure(result_plot, "Figures/barplot_slope", 4, 2)
+
+
+ggsave(filename = "Figures/lineplot_projects.svg", plot = result_plot,
+       height = 2.5, width = 6,  units = c("in"))
+
+
+
+
 
 ```
 
@@ -471,7 +879,6 @@ lm <- df %>%
   group_by(Project) %>%
   summarise(fit = lm(VersionOrder ~ Bloated)[[3]])
   
-  
   do(fitBloated = tidy(lm(VersionOrder ~ Bloated, data = .))) %>% 
   unnest(fitBloated)
 
@@ -487,54 +894,6 @@ df %>%
   ggplot(aes(VersionOrder, Bloated), color=Project) +
   geom_point(alpha = 0.1) +
   geom_line(alpha=0.1) 
-
-
-```
-
-```{r echo=FALSE}
-results %>%
-  filter(Project == "7le/shine-mq") %>%
-  select(VersionOrder, NbDependencies) %>%
-  ggplot(aes(x = VersionOrder, y = NbDependencies)) +
-  ylim(0, 43) +
-  geom_line() +
-  geom_point()
-
-library(jmotif)
-library(forecast)
-
-tmp <- results %>%
-  filter(Project == "7le/shine-mq") %>%
-  select(VersionOrder, NbDependencies)
-
-
-library(pkr)
-Slope(tmp$VersionOrder, tmp$NbDependencies)
-
-
-tmp$NbDependencies <- znorm(tmp$NbDependencies, threshold = 0.01)
-tmp %>%   
-ggplot(aes(x = VersionOrder, y = NbDependencies)) +
-  geom_line() +
-  geom_point()
-
-
-
-tmp <- results %>%
-  filter(Project == "0opslab/opslabJutil") %>%
-  select(VersionOrder, NbDependencies)
-
-tmp$NbDependencies <- znorm(tmp$NbDependencies, threshold = 0.01)
-tmp %>%   
-ggplot(aes(x = VersionOrder, y = NbDependencies)) +
-  geom_line() +
-  geom_point()
-
-time.series <- ts(tmp$NbDependencies) 
-
-plot(time.series)
-decompose(time.series, type = c("additive"))
-
 
 
 ```
